@@ -47,8 +47,43 @@ def get_tables(conn, dbtype):
 def get_table_schema(conn, dbtype, table):
     with conn.cursor() as cur:
         if dbtype == 'mysql':
-            # ...기존코드...
-            # ...생략...
+            cur.execute(f"SHOW FULL COLUMNS FROM `{table}`")
+            columns = cur.fetchall()
+            cur.execute(f"SHOW INDEX FROM `{table}`")
+            idx_rows = cur.fetchall()
+            # 인덱스 정보: (Table, Non_unique, Key_name, Seq_in_index, Column_name, ...)
+            # PRIMARY, MUL(자동 생성) 제외, 같은 인덱스 이름은 컬럼명 합치기
+            index_dict = {}
+            for row in idx_rows:
+                key_name = row[2]
+                non_unique = row[1]
+                # PRIMARY, MUL(자동 생성) 제외: MUL은 일반적으로 Key_name이 'PRIMARY'가 아니면서 Non_unique=1, Unique=0
+                # MySQL에서 MUL은 Key_name이 'PRIMARY'가 아니고, Non_unique=1, Unique=0, 그리고 자동 생성된 인덱스임
+                # 사용자 생성 인덱스만 포함: Key_name != 'PRIMARY' and (Unique 인덱스 or 일반 인덱스)
+                if key_name == 'PRIMARY':
+                    continue
+                # 자동 생성된 MUL 인덱스(외래키 등)는 MySQL에서 Non_unique=1, Key_name이 컬럼명과 동일한 경우가 많음
+                # 일반적으로 사용자가 직접 생성한 인덱스는 Key_name이 컬럼명과 다름
+                # 여기서는 Key_name이 컬럼명과 동일하면 제외 (자동 생성 인덱스)
+                if key_name == row[4]:
+                    continue
+                if key_name not in index_dict:
+                    index_dict[key_name] = {'columns': [], 'unique': 'Y' if non_unique == 0 else ''}
+                index_dict[key_name]['columns'].append(row[4])
+            indexes = [(iname, ','.join(data['columns']), data['unique']) for iname, data in index_dict.items()]
+            # PK
+            pk = [row[0] for row in columns if row[4] == 'PRI']
+            # FK (information_schema에서 추출)
+            cur.execute(f"""
+                SELECT column_name, referenced_table_name, referenced_column_name
+                FROM information_schema.KEY_COLUMN_USAGE
+                WHERE table_schema=DATABASE() AND table_name=%s AND referenced_table_name IS NOT NULL
+            """, (table,))
+            fk = cur.fetchall()
+            # 코멘트
+            cur.execute(f"SELECT table_comment FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='{table}'")
+            r = cur.fetchone()
+            table_comment = r[0] if r else ''
             return {
                 'columns': columns,
                 'indexes': indexes,
@@ -57,8 +92,21 @@ def get_table_schema(conn, dbtype, table):
                 'table_comment': table_comment
             }
         elif dbtype == 'postgresql':
-            # ...기존코드...
-            # ...생략...
+            cur.execute(f"SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_name = '{table}'")
+            columns = cur.fetchall()
+            # 인덱스 정보
+            cur.execute(f"SELECT indexname, indexdef FROM pg_indexes WHERE tablename = '{table}'")
+            indexes = [(row[0], row[1], '') for row in cur.fetchall()]
+            # PK
+            cur.execute(f"SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{table}'::regclass AND i.indisprimary")
+            pk = [row[0] for row in cur.fetchall()]
+            # FK
+            cur.execute(f"SELECT kcu.column_name, ccu.table_name, ccu.column_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name AND tc.table_name = kcu.table_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name='{table}'")
+            fk = cur.fetchall()
+            # 코멘트
+            cur.execute(f"SELECT obj_description('{table}'::regclass)")
+            r = cur.fetchone()
+            table_comment = r[0] if r else ''
             return {
                 'columns': columns,
                 'indexes': indexes,
