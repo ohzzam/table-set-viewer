@@ -1,3 +1,6 @@
+* 프로젝트를 진행하다 테이블 정의서를 요청시 사용하면 됩니다. 테스트는 mysql 로 테스트를 진행 하였지만 oracle, cubrid, postgresql 지원 가능. 
+* 데이터 표준화 프로그램도 완료되어감. (https://github.com/ohzzam/Python)
+
 
 조회화면 
 
