@@ -1,0 +1,114 @@
+{
+  "governance": {
+    "platform_name": "데이터 허브 - 표준/메타데이터/품질/거버넌스 플랫폼",
+    "version": "1.0.0",
+    "environment": "production",
+    "timezone": "Asia/Seoul"
+  },
+  
+  "database": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "dhwoan",
+    "database": "test",
+    "charset": "utf8mb4"
+  },
+  
+  "metadata": {
+    "default_classification": "internal",
+    "retention_policy": {
+      "public": 365,
+      "internal": 730,
+      "confidential": 365,
+      "restricted": 180
+    }
+  },
+  
+  "quality": {
+    "default_threshold": {
+      "completeness": 95.0,
+      "accuracy": 99.0,
+      "consistency": 95.0,
+      "timeliness": 90.0,
+      "uniqueness": 99.0
+    },
+    "quality_score_weights": {
+      "completeness": 0.2,
+      "accuracy": 0.3,
+      "consistency": 0.2,
+      "timeliness": 0.2,
+      "uniqueness": 0.1
+    },
+    "sla_targets": {
+      "critical": 99.9,
+      "high": 99.5,
+      "medium": 99.0,
+      "low": 95.0
+    }
+  },
+  
+  "lineage": {
+    "tracking_enabled": true,
+    "auto_discovery": false,
+    "refresh_interval_hours": 24
+  },
+  
+  "llm_integration": {
+    "provider": "claude",
+    "model": "claude-3-sonnet",
+    "temperature": 0.7,
+    "max_tokens": 2048,
+    "context_window_size": 100000
+  },
+  
+  "embedding": {
+    "provider": "hugging_face",
+    "model": "sentence-transformers/multilingual-MiniLM-L12-v2",
+    "embedding_dimension": 384,
+    "batch_size": 32
+  },
+  
+  "vector_db": {
+    "type": "milvus",
+    "host": "127.0.0.1",
+    "port": 19530,
+    "collection_name": "data_hub_knowledge",
+    "vector_size": 384,
+    "index_type": "IVF_FLAT",
+    "metric_type": "L2"
+  },
+
+  "observation": {
+    "env_observation_table": "env_observation",
+    "growth_observation_table": "growth_observation",
+    "batch_size": 1000,
+    "partition_type": "RANGE COLUMNS",
+    "partition_key": "obs_dtm",
+    "retention_months": 36
+  },
+
+  "document_processing": {
+    "chunk_size": 512,
+    "chunk_overlap": 50,
+    "supported_types": ["manual", "worklog", "policy", "spec", "guidance"],
+    "max_file_size_mb": 100,
+    "extraction_engine": "pdf2image+pytesseract"
+  },
+
+  "rfp_compliance": {
+    "package_score_target": 95.0,
+    "required_items": {
+      "standard_codes": 8,
+      "schema": 6,
+      "quality_rules": 7,
+      "data_dictionary": 7
+    },
+    "weights": {
+      "standard_codes": 0.30,
+      "schema": 0.30,
+      "quality_rules": 0.25,
+      "data_dictionary": 0.15
+    }
+  }
+}

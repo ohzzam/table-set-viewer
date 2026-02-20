@@ -1,0 +1,112 @@
+{
+  "quality_rules": [
+    {
+      "rule_id": "QR001",
+      "rule_name": "Null값 검사",
+      "rule_description": "테이블의 완전성 검사 - Null 값이 5% 이상이면 실패",
+      "table_id": "*",
+      "rule_type": "null_check",
+      "condition_sql": "SELECT COUNT(*) / COUNT(*) * 100 FROM {table}",
+      "threshold": 95.0,
+      "severity": "critical",
+      "enabled": true
+    },
+    {
+      "rule_id": "QR002",
+      "rule_name": "유일성 검사",
+      "rule_description": "기본키 컬럼의 중복 검사",
+      "table_id": "*",
+      "rule_type": "uniqueness",
+      "condition_sql": "SELECT COUNT(DISTINCT id) / COUNT(*) * 100 FROM {table}",
+      "threshold": 99.0,
+      "severity": "critical",
+      "enabled": true
+    },
+    {
+      "rule_id": "QR003",
+      "rule_name": "최근 업데이트 확인",
+      "rule_description": "데이터가 24시간 이내에 업데이트 되었는지 확인",
+      "table_id": "*",
+      "rule_type": "custom_sql",
+      "condition_sql": "SELECT IF(MAX(updated_at) >= DATE_SUB(NOW(), INTERVAL 24 HOUR), 100, 0) FROM {table}",
+      "threshold": 100.0,
+      "severity": "warning",
+      "enabled": true
+    },
+    {
+      "rule_id": "QR004",
+      "rule_name": "데이터 신선도",
+      "rule_description": "데이터가 7일 이내에 생성되었는지 확인",
+      "table_id": "*",
+      "rule_type": "custom_sql",
+      "condition_sql": "SELECT IF(MAX(created_at) >= DATE_SUB(NOW(), INTERVAL 7 DAY), 100, 50) FROM {table}",
+      "threshold": 80.0,
+      "severity": "info",
+      "enabled": true
+    },
+    {
+      "rule_id": "QR005",
+      "rule_name": "테이블 크기 확인",
+      "rule_description": "테이블이 비어있지 않은지 확인",
+      "table_id": "*",
+      "rule_type": "custom_sql",
+      "condition_sql": "SELECT IF(COUNT(*) > 0, 100, 0) FROM {table}",
+      "threshold": 100.0,
+      "severity": "warning",
+      "enabled": true
+    }
+  ],
+  
+  "data_quality_dimensions": {
+    "completeness": {
+      "description": "모든 필드가 필수 데이터를 가지고 있는가",
+      "weight": 0.2,
+      "thresholds": {
+        "excellent": 99,
+        "good": 95,
+        "fair": 90,
+        "poor": 80
+      }
+    },
+    "accuracy": {
+      "description": "데이터가 실제 현실을 정확하게 반영하는가",
+      "weight": 0.3,
+      "thresholds": {
+        "excellent": 99,
+        "good": 95,
+        "fair": 90,
+        "poor": 85
+      }
+    },
+    "consistency": {
+      "description": "데이터가 모든 시스템에서 일관되게 표현되는가",
+      "weight": 0.2,
+      "thresholds": {
+        "excellent": 99,
+        "good": 95,
+        "fair": 90,
+        "poor": 85
+      }
+    },
+    "timeliness": {
+      "description": "데이터가 충분히 최신 상태인가",
+      "weight": 0.2,
+      "thresholds": {
+        "excellent": 95,
+        "good": 90,
+        "fair": 80,
+        "poor": 70
+      }
+    },
+    "uniqueness": {
+      "description": "중복 데이터가 없는가",
+      "weight": 0.1,
+      "thresholds": {
+        "excellent": 99,
+        "good": 98,
+        "fair": 95,
+        "poor": 90
+      }
+    }
+  }
+}

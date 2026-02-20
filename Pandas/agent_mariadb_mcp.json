@@ -1,0 +1,112 @@
+{
+  "agent_id": "agri-data-agent-001",
+  "env": "prod",
+  "timezone": "Asia/Seoul",
+  
+  "mcp": {
+    "context_providers": [
+      {
+        "type": "database",
+        "name": "mariadb_agri_core",
+        "description": "농업 데이터 허브(환경/생육/작업/품질) 운영 DB",
+        "dbms": "mariadb",
+        "driver": "pymysql",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 3306,
+          "database": "test",
+          "user": "root",
+          "password_env": "dhwoan",
+          "charset": "utf8mb4",
+          "autocommit": true,
+          "connect_timeout_sec": 5,
+          "read_timeout_sec": 30,
+          "write_timeout_sec": 30
+        },
+        "pool": {
+          "enabled": true,
+          "pool_size": 10,
+          "max_overflow": 20,
+          "recycle_sec": 1800
+        },
+        "schema_hint": {
+          "tables": [
+            { "name": "env_sensor_reading", "desc": "환경 센서 측정치(시계열)", "pk": ["site_id", "sensor_id", "measured_at"] },
+            { "name": "crop_growth_observation", "desc": "생육 관측(일/주 단위)", "pk": ["site_id", "crop_id", "obs_date"] },
+            { "name": "farm_work_log", "desc": "작업 이력(영농일지)", "pk": ["work_id"] },
+            { "name": "dq_issue_log", "desc": "품질 이슈 로그(룰/ML)", "pk": ["issue_id"] }
+          ],
+          "code_tables": [
+            { "name": "cd_weather_type", "desc": "기상 유형 코드" },
+            { "name": "cd_crop_type", "desc": "작물 유형 코드" },
+            { "name": "cd_work_type", "desc": "작업 유형 코드" }
+          ]
+        }
+      }
+    ],
+
+    "tools": [
+      {
+        "tool_id": "sql_query_readonly",
+        "type": "sql",
+        "provider": "mariadb_agri_core",
+        "mode": "read_only",
+        "policy": {
+          "allow_statements": ["SELECT", "WITH", "EXPLAIN"],
+          "deny_keywords": [
+            "INSERT", "UPDATE", "DELETE", "REPLACE", "TRUNCATE",
+            "DROP", "ALTER", "CREATE", "GRANT", "REVOKE",
+            "LOAD DATA", "INTO OUTFILE", "INFILE",
+            "SET", "LOCK", "UNLOCK", "KILL"
+          ],
+          "max_rows": 5000,
+          "max_runtime_ms": 5000,
+          "require_parameter_binding": true,
+          "require_query_template_id": true
+        },
+        "audit": {
+          "enabled": true,
+          "sink": "db_table",
+          "table": "agent_audit_log",
+          "fields": [
+            "event_ts", "agent_id", "user_id", "tool_id",
+            "query_template_id", "params_json",
+            "row_count", "elapsed_ms", "success", "error_msg"
+          ]
+        }
+      }
+    ],
+
+  "query_templates": [
+      {
+        "id": "Q001_audit_log_by_user",
+        "title": "사용자별 감사 로그 조회",
+        "sql": "SELECT event_ts, agent_id, user_id, tool_id, query_template_id, row_count, elapsed_ms, success FROM agent_audit_log WHERE user_id=%(user_id)s ORDER BY event_ts DESC LIMIT %(limit_rows)s",
+        "params": {
+          "user_id": { "type": "string", "required": true, "max_len": 64 },
+          "limit_rows": { "type": "int", "required": false, "min": 1, "max": 1000 }
+        },
+        "result_contract": {
+          "columns": ["event_ts", "agent_id", "user_id", "tool_id", "query_template_id", "row_count", "elapsed_ms", "success"]
+        }
+      },
+      {
+        "id": "Q002_audit_log_recent",
+        "title": "최근 감사 로그 조회",
+        "sql": "SELECT event_ts, agent_id, user_id, tool_id, success, error_msg FROM agent_audit_log ORDER BY event_ts DESC LIMIT %(limit_rows)s",
+        "params": {
+          "limit_rows": { "type": "int", "required": true, "min": 1, "max": 100 }
+        },
+        "result_contract": {
+          "columns": ["event_ts", "agent_id", "user_id", "tool_id", "success", "error_msg"]
+        }
+      }
+    ],
+
+    "outputs": {
+      "default_format": "json",
+      "include_sql_in_response": false,
+      "include_query_plan": "on_demand"
+    }
+  }
+}

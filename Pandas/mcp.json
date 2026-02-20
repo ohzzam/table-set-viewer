@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "mariadb-local": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-mysql",
+        "mysql://root:dhwoan@localhost:3306/mysql"
+      ]
+    }
+  }
+}

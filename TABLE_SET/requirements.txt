@@ -1,0 +1,5 @@
+pymysql
+psycopg2
+pandas
+openpyxl
+PyQt5
