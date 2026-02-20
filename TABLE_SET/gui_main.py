@@ -150,7 +150,10 @@ class MainWindow(QWidget):
                 fk_str = '-'
             info += f"<b>Foreign Key:</b> {fk_str}<br>"
             if indexes:
-                idx_str = '<br>'.join([f"<b>{t}</b> <span style='color:blue'>{iname}</span> ({icols})" for t, iname, icols in indexes])
+                # MySQL: (index_name, columns, unique)
+                idx_str = '<br>'.join([
+                    f"<b>{row[0]}</b> <span style='color:blue'>{row[1]}</span> ({row[2]})" for row in indexes
+                ])
             else:
                 idx_str = '-'
             info += f"<b>Index info:</b> {idx_str}"
@@ -244,10 +247,12 @@ class MainWindow(QWidget):
                 ws2.cell(row=row_cursor, column=2).font = Font(bold=True)
                 ws2.cell(row=row_cursor, column=2).alignment = Alignment(horizontal='center')
                 row_cursor += 1
+                # Table Name을 첫 줄, Table ID를 두 번째 줄에 배치
+                ws2.cell(row=row_cursor, column=2, value='Table Name')
+                ws2.cell(row=row_cursor, column=3, value=t)
+                row_cursor += 1
                 ws2.cell(row=row_cursor, column=2, value='Table ID')
                 ws2.cell(row=row_cursor, column=3, value=t)
-                ws2.cell(row=row_cursor, column=4, value='Table Name')
-                ws2.cell(row=row_cursor, column=5, value=t)
                 row_cursor += 1
                 ws2.cell(row=row_cursor, column=2, value='Description')
                 ws2.cell(row=row_cursor, column=3, value=comment)
@@ -261,7 +266,8 @@ class MainWindow(QWidget):
                 row_cursor += 1
                 ws2.cell(row=row_cursor, column=2, value='Index info #1')
                 row_cursor += 1
-                # 인덱스 정보 표
+                # 인덱스 정보 표 (사용자 생성 인덱스만)
+                # 인덱스 정보: db_utils에서 (index_name, columns, unique) 튜플로 반환됨
                 if indexes:
                     idx_headers = ['Index Name', 'Columns', 'Unique']
                     for i, h in enumerate(idx_headers, 2):
@@ -270,10 +276,7 @@ class MainWindow(QWidget):
                         ws2.cell(row=row_cursor, column=i).font = Font(bold=True)
                         ws2.cell(row=row_cursor, column=i).alignment = Alignment(horizontal='center')
                     row_cursor += 1
-                    for idx in indexes:
-                        iname = idx[1]
-                        icols = idx[2]
-                        unique = 'Y' if len(idx) > 3 and idx[3] else ''
+                    for iname, icols, unique in indexes:
                         ws2.cell(row=row_cursor, column=2, value=iname)
                         ws2.cell(row=row_cursor, column=3, value=icols)
                         ws2.cell(row=row_cursor, column=4, value=unique)
@@ -291,7 +294,13 @@ class MainWindow(QWidget):
                 # 컬럼 정보
                 for idx, col in enumerate(columns, 1):
                     null_val = 'NN' if col[3] == 'NO' else ''
-                    key_val = col[4]
+                    key_raw = col[4]
+                    if key_raw == 'PRI':
+                        key_val = 'PK'
+                    elif key_raw == 'MUL':
+                        key_val = 'MUL'
+                    else:
+                        key_val = key_raw
                     ws2.cell(row=row_cursor, column=2, value=idx)
                     ws2.cell(row=row_cursor, column=3, value=col[0])
                     ws2.cell(row=row_cursor, column=4, value=col[8] if len(col) > 8 else '')
@@ -325,10 +334,13 @@ class MainWindow(QWidget):
                         except:
                             pass
                     ws.column_dimensions[col_letter].width = max(12, min(maxlen+2, 40))
-            wb.save(save_path)
-            QMessageBox.information(self, '완료', '엑셀 저장 완료!')
-        except Exception as e:
-            QMessageBox.critical(self, '에러', f'엑셀 저장 중 오류 발생: {e}')
+            try:
+                wb.save(save_path)
+                QMessageBox.information(self, '완료', '엑셀 저장 완료!')
+            except PermissionError:
+                QMessageBox.critical(self, '에러', f'파일이 열려 있어 저장할 수 없습니다.\n파일을 닫고 다시 시도하세요:\n{save_path}')
+            except Exception as e:
+                QMessageBox.critical(self, '에러', f'엑셀 저장 중 오류 발생: {e}')
 
     def show_ddl(self):
         from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPlainTextEdit, QPushButton
