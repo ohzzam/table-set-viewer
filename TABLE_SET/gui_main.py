@@ -191,156 +191,155 @@ class MainWindow(QWidget):
                     self.schema_table.setItem(i, j, QTableWidgetItem(str(val)))
 
     def export_to_excel(self):
-        try:
-            import openpyxl
-            from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
-            from openpyxl.utils import get_column_letter
-            if not self.conn:
-                QMessageBox.warning(self, '경고', '테이블을 선택하세요.')
-                return
-            tables = []
-            table_comments = {}
-            for i in range(self.table_list.rowCount()):
-                item = self.table_list.item(i, 0)
-                if item and item.checkState():
-                    display = self.table_list.item(i, 1).text()
-                    tname = display.split(' / ')[0]
-                    tcomment = display.split(' / ')[1] if ' / ' in display else ''
-                    tables.append(tname)
-                    table_comments[tname] = tcomment
-            if not tables:
-                QMessageBox.warning(self, '경고', '체크된 테이블이 없습니다.')
-                return
-            save_path, _ = QFileDialog.getSaveFileName(self, '엑셀로 저장', '', 'Excel Files (*.xlsx)')
-            if not save_path:
-                return
-            wb = openpyxl.Workbook()
-            # 1. 테이블 목록 시트
-            ws1 = wb.active
-            ws1.title = '테이블 목록'
-            ws1.append(['NN', 'Table Name', 'Description'])
-            for idx, t in enumerate(tables, 1):
-                ws1.append([idx, t, table_comments.get(t, '')])
-            # 스타일 적용 (헤더 회색, 굵게, 가운데)
-            header_fill = PatternFill('solid', fgColor='B7B7B7')
-            for cell in ws1[1]:
-                cell.fill = header_fill
-                cell.font = Font(bold=True)
-                cell.alignment = Alignment(horizontal='center', vertical='center')
-            for col in range(1, 4):
-                ws1.column_dimensions[get_column_letter(col)].width = 20
-            # 2. 테이블 정의서 시트
-            ws2 = wb.create_sheet('테이블 정의서')
-            row_cursor = 1
-            table_blocks = []  # (start_row, end_row) for each table
-            for t in tables:
-                block_start = row_cursor
-                schema = get_table_schema(self.conn, self.dbtype, t)
-                columns = schema['columns']
-                pk = schema['primary_key']
-                fk = schema['foreign_keys']
-                indexes = schema['indexes']
-                comment = schema['table_comment']
-                # 테이블 정보 블록
-                ws2.merge_cells(start_row=row_cursor, start_column=2, end_row=row_cursor, end_column=8)
-                ws2.cell(row=row_cursor, column=2, value='테이블 정의서').fill = header_fill
-                ws2.cell(row=row_cursor, column=2).font = Font(bold=True)
-                ws2.cell(row=row_cursor, column=2).alignment = Alignment(horizontal='center')
-                row_cursor += 1
-                # Table Name을 첫 줄, Table ID를 두 번째 줄에 배치
-                ws2.cell(row=row_cursor, column=2, value='Table Name')
-                ws2.cell(row=row_cursor, column=3, value=t)
-                row_cursor += 1
-                ws2.cell(row=row_cursor, column=2, value='Table ID')
-                ws2.cell(row=row_cursor, column=3, value=t)
-                row_cursor += 1
-                ws2.cell(row=row_cursor, column=2, value='Description')
-                ws2.cell(row=row_cursor, column=3, value=comment)
-                row_cursor += 1
-                ws2.cell(row=row_cursor, column=2, value='Primary Key')
-                ws2.cell(row=row_cursor, column=3, value=','.join(pk) if pk else '')
-                row_cursor += 1
-                ws2.cell(row=row_cursor, column=2, value='Foreign Key')
-                fk_str = ', '.join([f"{c}->{t2}({col})" for c, t2, col in fk]) if fk else ''
-                ws2.cell(row=row_cursor, column=3, value=fk_str)
-                row_cursor += 1
-                ws2.cell(row=row_cursor, column=2, value='Index info #1')
-                row_cursor += 1
-                # 인덱스 정보 표 (사용자 생성 인덱스만)
-                # 인덱스 정보: db_utils에서 (index_name, columns, unique) 튜플로 반환됨
-                if indexes:
-                    idx_headers = ['Index Name', 'Columns', 'Unique']
-                    for i, h in enumerate(idx_headers, 2):
-                        ws2.cell(row=row_cursor, column=i, value=h)
-                        ws2.cell(row=row_cursor, column=i).fill = header_fill
-                        ws2.cell(row=row_cursor, column=i).font = Font(bold=True)
-                        ws2.cell(row=row_cursor, column=i).alignment = Alignment(horizontal='center')
-                    row_cursor += 1
-                    for iname, icols, unique in indexes:
-                        ws2.cell(row=row_cursor, column=2, value=iname)
-                        ws2.cell(row=row_cursor, column=3, value=icols)
-                        ws2.cell(row=row_cursor, column=4, value=unique)
-                        row_cursor += 1
-                else:
-                    row_cursor += 1
-                # 컬럼 헤더 (NN~Default까지 7개 컬럼, 모두 회색)
-                col_headers = ['NN', 'Physical Name', 'Logical Name', 'Data Type', 'Null', 'Key', 'Default']
-                for i, h in enumerate(col_headers, 2):
+        import openpyxl
+        from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+        from openpyxl.utils import get_column_letter
+        if not self.conn:
+            QMessageBox.warning(self, '경고', '테이블을 선택하세요.')
+            return
+        tables = []
+        table_comments = {}
+        for i in range(self.table_list.rowCount()):
+            item = self.table_list.item(i, 0)
+            if item and item.checkState():
+                display = self.table_list.item(i, 1).text()
+                tname = display.split(' / ')[0]
+                tcomment = display.split(' / ')[1] if ' / ' in display else ''
+                tables.append(tname)
+                table_comments[tname] = tcomment
+        if not tables:
+            QMessageBox.warning(self, '경고', '체크된 테이블이 없습니다.')
+            return
+        save_path, _ = QFileDialog.getSaveFileName(self, '엑셀로 저장', '', 'Excel Files (*.xlsx)')
+        if not save_path:
+            return
+        wb = openpyxl.Workbook()
+        # 1. 테이블 목록 시트
+        ws1 = wb.active
+        ws1.title = '테이블 목록'
+        ws1.append(['NN', 'Table Name', 'Description'])
+        for idx, t in enumerate(tables, 1):
+            ws1.append([idx, t, table_comments.get(t, '')])
+        # 스타일 적용 (헤더 회색, 굵게, 가운데)
+        header_fill = PatternFill('solid', fgColor='B7B7B7')
+        for cell in ws1[1]:
+            cell.fill = header_fill
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+        for col in range(1, 4):
+            ws1.column_dimensions[get_column_letter(col)].width = 20
+        # 2. 테이블 정의서 시트
+        ws2 = wb.create_sheet('테이블 정의서')
+        row_cursor = 1
+        table_blocks = []  # (start_row, end_row) for each table
+        for t in tables:
+            block_start = row_cursor
+            schema = get_table_schema(self.conn, self.dbtype, t)
+            columns = schema['columns']
+            pk = schema['primary_key']
+            fk = schema['foreign_keys']
+            indexes = schema['indexes']
+            comment = schema['table_comment']
+            # 테이블 정보 블록
+            ws2.merge_cells(start_row=row_cursor, start_column=2, end_row=row_cursor, end_column=8)
+            ws2.cell(row=row_cursor, column=2, value='테이블 정의서').fill = header_fill
+            ws2.cell(row=row_cursor, column=2).font = Font(bold=True)
+            ws2.cell(row=row_cursor, column=2).alignment = Alignment(horizontal='center')
+            row_cursor += 1
+            # Table Name을 첫 줄, Table ID를 두 번째 줄에 배치
+            ws2.cell(row=row_cursor, column=2, value='Table Name')
+            ws2.cell(row=row_cursor, column=3, value=t)
+            row_cursor += 1
+            ws2.cell(row=row_cursor, column=2, value='Table ID')
+            ws2.cell(row=row_cursor, column=3, value=t)
+            row_cursor += 1
+            ws2.cell(row=row_cursor, column=2, value='Description')
+            ws2.cell(row=row_cursor, column=3, value=comment)
+            row_cursor += 1
+            ws2.cell(row=row_cursor, column=2, value='Primary Key')
+            ws2.cell(row=row_cursor, column=3, value=','.join(pk) if pk else '')
+            row_cursor += 1
+            ws2.cell(row=row_cursor, column=2, value='Foreign Key')
+            fk_str = ', '.join([f"{c}->{t2}({col})" for c, t2, col in fk]) if fk else ''
+            ws2.cell(row=row_cursor, column=3, value=fk_str)
+            row_cursor += 1
+            ws2.cell(row=row_cursor, column=2, value='Index info #1')
+            row_cursor += 1
+            # 인덱스 정보 표 (사용자 생성 인덱스만)
+            # 인덱스 정보: db_utils에서 (index_name, columns, unique) 튜플로 반환됨
+            if indexes:
+                idx_headers = ['Index Name', 'Columns', 'Unique']
+                for i, h in enumerate(idx_headers, 2):
                     ws2.cell(row=row_cursor, column=i, value=h)
                     ws2.cell(row=row_cursor, column=i).fill = header_fill
                     ws2.cell(row=row_cursor, column=i).font = Font(bold=True)
                     ws2.cell(row=row_cursor, column=i).alignment = Alignment(horizontal='center')
                 row_cursor += 1
-                # 컬럼 정보
-                for idx, col in enumerate(columns, 1):
-                    null_val = 'NN' if col[3] == 'NO' else ''
-                    key_raw = col[4]
-                    if key_raw == 'PRI':
-                        key_val = 'PK'
-                    elif key_raw == 'MUL':
-                        key_val = 'MUL'
-                    else:
-                        key_val = key_raw
-                    ws2.cell(row=row_cursor, column=2, value=idx)
-                    ws2.cell(row=row_cursor, column=3, value=col[0])
-                    ws2.cell(row=row_cursor, column=4, value=col[8] if len(col) > 8 else '')
-                    ws2.cell(row=row_cursor, column=5, value=col[1])
-                    ws2.cell(row=row_cursor, column=6, value=null_val)
-                    ws2.cell(row=row_cursor, column=7, value=key_val)
-                    ws2.cell(row=row_cursor, column=8, value=col[5])
+                for iname, icols, unique in indexes:
+                    ws2.cell(row=row_cursor, column=2, value=iname)
+                    ws2.cell(row=row_cursor, column=3, value=icols)
+                    ws2.cell(row=row_cursor, column=4, value=unique)
                     row_cursor += 1
-                block_end = row_cursor - 1
-                table_blocks.append((block_start, block_end))
-                row_cursor += 2  # 테이블별 구분을 위해 빈 줄 2개
-            # 스타일: 전체 표 테두리(테이블 정의서 시트는 각 테이블 블록에만 적용)
-            thin = Side(border_style='thin', color='000000')
-            for start, end in table_blocks:
-                for row in ws2.iter_rows(min_row=start, max_row=end, min_col=2, max_col=8):
-                    for cell in row:
-                        cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
-            # 테이블 목록 시트는 전체 테두리 유지
-            for row in ws1.iter_rows():
+            else:
+                row_cursor += 1
+            # 컬럼 헤더 (NN~Default까지 7개 컬럼, 모두 회색)
+            col_headers = ['NN', 'Physical Name', 'Logical Name', 'Data Type', 'Null', 'Key', 'Default']
+            for i, h in enumerate(col_headers, 2):
+                ws2.cell(row=row_cursor, column=i, value=h)
+                ws2.cell(row=row_cursor, column=i).fill = header_fill
+                ws2.cell(row=row_cursor, column=i).font = Font(bold=True)
+                ws2.cell(row=row_cursor, column=i).alignment = Alignment(horizontal='center')
+            row_cursor += 1
+            # 컬럼 정보
+            for idx, col in enumerate(columns, 1):
+                null_val = 'NN' if col[3] == 'NO' else ''
+                key_raw = col[4]
+                if key_raw == 'PRI':
+                    key_val = 'PK'
+                elif key_raw == 'MUL':
+                    key_val = 'MUL'
+                else:
+                    key_val = key_raw
+                ws2.cell(row=row_cursor, column=2, value=idx)
+                ws2.cell(row=row_cursor, column=3, value=col[0])
+                ws2.cell(row=row_cursor, column=4, value=col[8] if len(col) > 8 else '')
+                ws2.cell(row=row_cursor, column=5, value=col[1])
+                ws2.cell(row=row_cursor, column=6, value=null_val)
+                ws2.cell(row=row_cursor, column=7, value=key_val)
+                ws2.cell(row=row_cursor, column=8, value=col[5])
+                row_cursor += 1
+            block_end = row_cursor - 1
+            table_blocks.append((block_start, block_end))
+            row_cursor += 2  # 테이블별 구분을 위해 빈 줄 2개
+        # 스타일: 전체 표 테두리(테이블 정의서 시트는 각 테이블 블록에만 적용)
+        thin = Side(border_style='thin', color='000000')
+        for start, end in table_blocks:
+            for row in ws2.iter_rows(min_row=start, max_row=end, min_col=2, max_col=8):
                 for cell in row:
                     cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
-            # 자동 높이/너비
-            for ws in [ws1, ws2]:
-                for col in ws.columns:
-                    maxlen = 0
-                    col_letter = get_column_letter(col[0].column)
-                    for cell in col:
-                        try:
-                            if cell.value:
-                                maxlen = max(maxlen, len(str(cell.value)))
-                        except:
-                            pass
-                    ws.column_dimensions[col_letter].width = max(12, min(maxlen+2, 40))
-            try:
-                wb.save(save_path)
-                QMessageBox.information(self, '완료', '엑셀 저장 완료!')
-            except PermissionError:
-                QMessageBox.critical(self, '에러', f'파일이 열려 있어 저장할 수 없습니다.\n파일을 닫고 다시 시도하세요:\n{save_path}')
-            except Exception as e:
-                QMessageBox.critical(self, '에러', f'엑셀 저장 중 오류 발생: {e}')
+        # 테이블 목록 시트는 전체 테두리 유지
+        for row in ws1.iter_rows():
+            for cell in row:
+                cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
+        # 자동 높이/너비
+        for ws in [ws1, ws2]:
+            for col in ws.columns:
+                maxlen = 0
+                col_letter = get_column_letter(col[0].column)
+                for cell in col:
+                    try:
+                        if cell.value:
+                            maxlen = max(maxlen, len(str(cell.value)))
+                    except:
+                        pass
+                ws.column_dimensions[col_letter].width = max(12, min(maxlen+2, 40))
+        try:
+            wb.save(save_path)
+            QMessageBox.information(self, '완료', '엑셀 저장 완료!')
+        except PermissionError:
+            QMessageBox.critical(self, '에러', f'파일이 열려 있어 저장할 수 없습니다.\n파일을 닫고 다시 시도하세요:\n{save_path}')
+        except Exception as e:
+            QMessageBox.critical(self, '에러', f'엑셀 저장 중 오류 발생: {e}')
 
     def show_ddl(self):
         from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPlainTextEdit, QPushButton
