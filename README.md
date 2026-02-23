@@ -44,3 +44,26 @@ MIT License
 
 ---
 문의: ohzzam (github.com/ohzzam)
+
+
+## 화면
+
+# 기본화면
+<img width="1011" height="720" alt="image" src="https://github.com/user-attachments/assets/24f50cdb-1b74-4287-a938-87ed039af869" />
+
+# 엑셀로 내보내기
+<img width="1028" height="716" alt="image" src="https://github.com/user-attachments/assets/77b184a6-4d0c-4e0e-9669-a819d44a6c71" />
+<img width="1019" height="721" alt="image" src="https://github.com/user-attachments/assets/8baf0a45-0c49-4335-88b4-f0d921ee6b70" />
+
+# DDL 생성
+<img width="1016" height="710" alt="image" src="https://github.com/user-attachments/assets/f3533f43-34b9-4711-aac5-217d5d7ceda2" />
+
+# 엑셀 결과 
+<img width="1276" height="418" alt="image" src="https://github.com/user-attachments/assets/b7b43ad0-55ab-45f7-9fb2-366b54f4f0be" />
+
+
+
+
+
+
+
